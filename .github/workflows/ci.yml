@@ -1,0 +1,24 @@
+name: Sample CI
+on:
+  pull_request:
+    branches:
+      - feature/feature1
+    types: [closed]
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: write
+  actions: write
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.merged == true || github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Echo
+        run: |
+          echo -e "hello github actions"
