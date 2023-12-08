@@ -80,7 +80,7 @@ jobs:
 
       - name: Create Deploy
         run: |
-          ZONES=${{ steps.determine-deploy-zones.outputs.ZONES }}
+          ZONES=(${{ steps.determine-deploy-zones.outputs.ZONES }})
 
           REVISION=$(git rev-parse --short HEAD)
           for zone in ${ZONES[@]}; do
