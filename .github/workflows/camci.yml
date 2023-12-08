@@ -61,7 +61,7 @@ jobs:
           if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
             ZONES=
             if [ "${{ inputs.deploy_pettern }}" == "zone" ]; then
-              ZONES=`echo "${{ inputs.deploy_by_zone }}" | cut -d ' ' -f2`
+              ZONES=`echo ${{ inputs.deploy_by_zone }} | cut -d ' ' -f2`
             else
               # 割合指定の場合
               if [ ${{ inputs.prev_ratio }} != "None" ]; then
