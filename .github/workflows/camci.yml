@@ -72,7 +72,7 @@ jobs:
     steps:
       - name: Check tag name input
         env:
-          GITHUB_RELEASE_API_ENDPOINT: https://github.com/y-kawawa/github-actions-test/releases
+          GITHUB_RELEASE_API_ENDPOINT: https://github.com/repos/y-kawawa/github-actions-test/releases
         run: |
           # リリースタクがどうかの検証
           curl -s -H "Authorization: token ${{ github.token }}" $GITHUB_RELEASE_API_ENDPOINT | jq -r '.[].tag_name' | grep -q "${{ github.ref_name }}"
