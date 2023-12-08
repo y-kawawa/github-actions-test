@@ -78,7 +78,7 @@ jobs:
           fi
 
       - name: Create Deploy
-        needs: determine-deploy-zones
+        needs: steps.determine-deploy-zones
         run: |
           ZONES=${{ steps.determine-deploy-zones.outputs.zones }}
 
