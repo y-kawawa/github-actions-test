@@ -13,7 +13,7 @@ on:
         options:
           - "ratio"
           - "zone"
-      zone_by_id:
+      deploy_by_zone:
         description: 'Server Zone'
         required: false
         type: choice
@@ -22,7 +22,7 @@ on:
           - "3: aws-10-20-44-0"
           - "4: aws-10-20-56-0"
           - "5: aws-10-21-0-0"
-      zone_by_ratio:
+      deploy_by_ratio:
         description: 'Rate of zones to be deployed [%]'
         required: false
         type: choice
@@ -61,13 +61,13 @@ jobs:
           if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
             ZONES=
             if [ "${{ inputs.deploy_pettern }}" == "zone" ]; then
-              ZONES=`echo "${{ inputs.zone }}" | cut -d ' ' -f2`
+              ZONES=`echo "${{ inputs.deploy_by_zone }}" | cut -d ' ' -f2`
             else
               # 割合指定の場合
               if [ ${{ inputs.prev_ratio }} != "None" ]; then
-                ZONES=`python3 deploy/scripts/ratio.py --rate ${{ inputs.zone_by_ratio }} --prev-rate ${{ inputs.prev_ratio }} --zones $ALL_ZONES`
+                ZONES=`python3 deploy/scripts/ratio.py --rate ${{ inputs.deploy_by_ratio }} --prev-rate ${{ inputs.prev_ratio }} --zones $ALL_ZONES`
               else
-                ZONES=`python3 deploy/scripts/ratio.py --rate ${{ inputs.zone_by_ratio }} --zones $ALL_ZONES`
+                ZONES=`python3 deploy/scripts/ratio.py --rate ${{ inputs.deploy_by_ratio }} --zones $ALL_ZONES`
               fi
             fi
             echo "ZONES=$ZONES"
