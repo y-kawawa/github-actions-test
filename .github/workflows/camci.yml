@@ -1,0 +1,89 @@
+name: cam deploy to staging
+on:
+  push:
+    branches:
+      - 'master'
+
+  workflow_dispatch:
+    inputs:
+      deploy_pettern:
+        description: 'Deploy Pettern'
+        required: true
+        type: choice
+        options:
+          - "ratio"
+          - "zone"
+      zone_by_id:
+        description: 'Server Zone'
+        required: false
+        type: choice
+        options:
+          - "1: aws-10-20-0-0"
+          - "3: aws-10-20-44-0"
+          - "4: aws-10-20-56-0"
+          - "5: aws-10-21-0-0"
+      zone_by_ratio:
+        description: 'Rate of zones to be deployed [%]'
+        required: false
+        type: choice
+        options:
+          - "10"
+          - "20"
+          - "50"
+          - "80"
+          - "100"
+      prev_ratio:
+        description: 'The deployed zone percentage. Choosing anything other than "None" deploys differences.'
+        required: false
+        type: choice
+        options:
+          - "None"
+          - "10"
+          - "20"
+          - "50"
+          - "100"
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    needs: determine_zones
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: determine deploy zone
+        id: determine-deploy-zones
+        run: |
+          # aws-10-20-32-0 はデプロイ対象外
+          ALL_ZONES="aws-10-20-0-0 aws-10-20-44-0 aws-10-20-56-0 aws-10-21-0-0"
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            ZONES=
+            if [ "${{ inputs.deploy_pettern }}" == "zone" ]; then
+              ZONES=($(echo "${{ inputs.zone }}" | cut -d ' ' -f2))
+            else
+              # 割合指定の場合
+              if [ ${{ inputs.prev_ratio }} != "None" ]; then
+                ZONES=python3 deploy/scripts/ratio.py --rate ${{ inputs.zone_by_ratio }} --prev-rate ${{ inputs.prev_ratio }} --zones $ALL_ZONES
+              else
+                ZONES=python3 deploy/scripts/ratio.py --rate ${{ inputs.zone_by_ratio }} --zones $ALL_ZONES
+              fi
+            fi
+            echo "::set-output name=zones::$ZONES"
+          else
+            # masterブランチへのmerge時は全てのゾーンにデプロイ
+            echo "::set-output name=zones::${ALL_ZONES}"
+          fi
+
+      - name: Create Deploy
+        needs: determine-deploy-zones
+        run: |
+          ZONES=${{ steps.determine-deploy-zones.outputs.zones }}
+
+          REVISION=$(git rev-parse --short HEAD)
+          for zone in ${ZONES[@]}; do
+            echo "deploy to ${zone}"
+            # TODO sleep
+          done
