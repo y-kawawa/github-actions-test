@@ -1,9 +1,13 @@
-name: cam deploy to staging
+# このworkflowは production にデプロイを行う
+# 実行条件 workflow_dispatch にて release tag が指定された場合
+# デプロイするzoneの決定方法 deploy_pettern に応じてデプロイ対象ゾーンを決定
+#   deploy_pettern が zone の場合 deploy_by_zone で指定されたゾーンにデプロイ
+#   deploy_pettern が ratio の場合 deploy_by_ratio で指定された割合でデプロイ
+#     先頭のゾーンから順に選択される
+#     prev_ratio にNone以外が指定された場合、deploy_by_ratio と prev_ratio の差分のゾーンにデプロイ
+#     i.g. prev_ratio=10, deploy_by_ratio=50 の場合、先頭から50%のうち、先頭の10%を除いた40%のゾーンにデプロイ
+name: cam deploy to production
 on:
-  push:
-    branches:
-      - 'master'
-
   workflow_dispatch:
     inputs:
       deploy_pettern:
@@ -18,10 +22,24 @@ on:
         required: false
         type: choice
         options:
-          - "1: aws-10-20-0-0"
-          - "3: aws-10-20-44-0"
-          - "4: aws-10-20-56-0"
-          - "5: aws-10-21-0-0"
+          - "1: aws-10-10-0-0"
+          - "2: aws-10-10-32-0"
+          - "3: aws-10-10-44-0"
+          - "4: aws-10-10-56-0"
+          - "5: aws-10-10-68-0"
+          - "6: aws-10-10-80-0"
+          - "7: aws-10-10-104-0"
+          - "8: aws-10-10-116-0"
+          - "9: aws-10-10-128-0"
+          - "10: aws-10-10-140-0"
+          - "11: aws-10-10-152-0"
+          - "12: aws-10-10-164-0"
+          - "13: aws-10-10-176-0"
+          - "14: aws-10-10-188-0"
+          - "15: aws-10-11-0-0"
+          - "16: aws-10-11-12-0"
+          - "17: aws-10-11-24-0"
+          - "18: aws-10-11-36-0"
       deploy_by_ratio:
         description: 'Rate of zones to be deployed [%]'
         required: false
@@ -42,6 +60,7 @@ on:
           - "20"
           - "50"
           - "100"
+
 permissions:
   id-token: write
   contents: read
@@ -49,41 +68,42 @@ permissions:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    if: github.ref_type == 'tag'
     steps:
+      - name: Check tag name input
+        env:
+          GITHUB_RELEASE_API_ENDPOINT: https://github.com/y-kawawa/github-actions-test/releases
+        run: |
+          # リリースタクがどうかの検証
+          curl -s -H "Authorization: token ${{ github.token }}" $GITHUB_RELEASE_API_ENDPOINT | jq -r '.[].tag_name' | grep -q ${{ github.ref_name }} 
+          echo "Tag name to be deployed: ${{ github.ref_name }}"
+
       - name: Checkout
         uses: actions/checkout@v3
 
       - name: determine deploy zone
         id: determine-deploy-zones
         run: |
-          # aws-10-20-32-0 はデプロイ対象外
-          ALL_ZONES="aws-10-20-0-0 aws-10-20-44-0 aws-10-20-56-0 aws-10-21-0-0"
-          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            ZONES=
-            if [ "${{ inputs.deploy_pettern }}" == "zone" ]; then
-              ZONES=`echo ${{ inputs.deploy_by_zone }} | cut -d ' ' -f2`
-            else
-              # 割合指定の場合
-              if [ ${{ inputs.prev_ratio }} != "None" ]; then
-                ZONES=`python3 deploy/scripts/ratio.py --rate ${{ inputs.deploy_by_ratio }} --prev-rate ${{ inputs.prev_ratio }} --zones $ALL_ZONES`
-              else
-                ZONES=`python3 deploy/scripts/ratio.py --rate ${{ inputs.deploy_by_ratio }} --zones $ALL_ZONES`
-              fi
-            fi
-            echo "ZONES=$ZONES"
-            echo "ZONES=$ZONES" >> "${GITHUB_OUTPUT}"
+          ALL_ZONES="aws-10-10-0-0 aws-10-10-32-0 aws-10-10-44-0 aws-10-10-56-0 aws-10-10-68-0 aws-10-10-80-0 aws-10-10-104-0 aws-10-10-116-0 aws-10-10-128-0 aws-10-10-140-0 aws-10-10-152-0 aws-10-10-164-0 aws-10-10-176-0 aws-10-10-188-0 aws-10-11-0-0 aws-10-11-12-0 aws-10-11-24-0 aws-10-11-36-0"
+          ZONES=
+          if [ "${{ inputs.deploy_pettern }}" == "zone" ]; then
+            # ゾーン指定の場合
+            ZONES=`echo ${{ inputs.deploy_by_zone }} | cut -d ' ' -f2`
           else
-            # masterブランチへのmerge時は全てのゾーンにデプロイ
-            echo "ZONES=$ALL_ZONES"
-            echo "ZONES=$ALL_ZONES" >> "${GITHUB_OUTPUT}"
+            # 割合指定の場合
+            if [ ${{ inputs.prev_ratio }} != "None" ]; then
+              ZONES=`python3 deploy/scripts/ratio.py --rate ${{ inputs.deploy_by_ratio }} --prev-rate ${{ inputs.prev_ratio }} --zones $ALL_ZONES`
+            else
+              ZONES=`python3 deploy/scripts/ratio.py --rate ${{ inputs.deploy_by_ratio }} --zones $ALL_ZONES`
+            fi
           fi
+          echo "ZONES=$ZONES"
+          echo "ZONES=$ZONES" >> "${GITHUB_OUTPUT}"
 
       - name: Create Deploy
         run: |
           ZONES=(${{ steps.determine-deploy-zones.outputs.ZONES }})
-
-          REVISION=$(git rev-parse --short HEAD)
           for zone in ${ZONES[@]}; do
-            echo "deploy to ${zone}"
-            # TODO sleep
+            echo "Deploy to $zone"
+            sleep 10
           done
