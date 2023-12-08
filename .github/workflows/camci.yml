@@ -70,15 +70,15 @@ jobs:
                 ZONES=`python3 deploy/scripts/ratio.py --rate ${{ inputs.zone_by_ratio }} --zones $ALL_ZONES`
               fi
             fi
-            echo "::set-output name=zones::$ZONES"
+            echo "ZONES=$ZONES" >> "${GITHUB_OUTPUT}"
           else
             # masterブランチへのmerge時は全てのゾーンにデプロイ
-            echo "::set-output name=zones::${ALL_ZONES}"
+            echo "ZONES=$ZONES" >> "${GITHUB_OUTPUT}"
           fi
 
       - name: Create Deploy
         run: |
-          ZONES=${{ steps.determine-deploy-zones.outputs.zones }}
+          ZONES=${{ steps.determine-deploy-zones.outputs.ZONES }}
 
           REVISION=$(git rev-parse --short HEAD)
           for zone in ${ZONES[@]}; do
