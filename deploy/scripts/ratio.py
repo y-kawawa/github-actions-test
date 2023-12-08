@@ -30,7 +30,7 @@ def main():
 
     target_zones = determine_zone_with_difference(args.zones, args.rate, args.prev_rate)
     target_zones_str = ' '.join(target_zones)
-    print(f"target_zones={target_zones_str}")
+    print(target_zones_str)
 
 
 if __name__ == "__main__":
