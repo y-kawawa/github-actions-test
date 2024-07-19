@@ -1,0 +1,29 @@
+name: reusable workflow
+on:
+  workflow_call:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          repository: ${{ y-kawawa/github-actions-test }}
+          # ref: ${{ github.event.client_payload.ref }}
+          path: reusable_workflow
+
+      - name: determine deploy zone
+        id: determine-deploy-zones
+        run: |
+          ALL_ZONES="aws-10-10-0-0 aws-10-10-32-0 aws-10-10-44-0 aws-10-10-56-0 aws-10-10-68-0 aws-10-10-80-0 aws-10-10-104-0 aws-10-10-116-0 aws-10-10-128-0 aws-10-10-140-0 aws-10-10-152-0 aws-10-10-164-0 aws-10-10-176-0 aws-10-10-188-0 aws-10-11-0-0 aws-10-11-12-0 aws-10-11-24-0 aws-10-11-36-0"
+          ZONES=`python3 reusable_workflow/deploy/scripts/ratio.py --rate 50 --prev-rate 20 --zones $ALL_ZONES`
+          echo "ZONES=$ZONES"
+          echo "ZONES=$ZONES" >> "${GITHUB_OUTPUT}"
+
+      - name: Create Deploy
+        run: |
+          ZONES=(${{ steps.determine-deploy-zones.outputs.ZONES }})
+          for zone in ${ZONES[@]}; do
+            echo "Deploy to $zone"
+            sleep 10
+          done
