@@ -27,6 +27,7 @@ jobs:
       - name: Create Deploy
         run: |
           echo "print env ${{ env.my-env }}"
+          echo "print repository-name: ${{github.event.repository.name}}"
           ZONES=(${{ steps.determine-deploy-zones.outputs.ZONES }})
           for zone in ${ZONES[@]}; do
             echo "Deploy to $zone"
